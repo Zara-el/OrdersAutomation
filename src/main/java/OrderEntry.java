@@ -158,6 +158,7 @@ public class OrderEntry {
             options.addArguments("--remote-allow-origins=*", "ignore-certificate-errors");
             options.addArguments("--no-sandbox");
             options.addArguments("--disable-dev-shm-usage");
+            options.addArguments("--headless");
             options.setBinary("C:\\Users\\Zara\\Documents\\Projects\\OrdersEntry\\src\\main\\resources\\msedgedriver.exe");
 
         } catch (Exception e) {
