@@ -58,7 +58,7 @@ public class OrderEntry {
     String AmazonCSVPath = "C:\\Users\\Zara\\Downloads\\MAIN TABLE-ETI DALLAS Orders.csv";
     String WalmartCSVPath = "C:\\Users\\Zara\\Downloads\\Walmart-Grid view.csv";
     String AmazonAirtableURL = "https://api.airtable.com/v0/appYoSKUjYL3bgvb3/MAIN%20TABLE?maxRecords=100&view=READY%20FOR%20ENTRY%20DALLAS";
-    String WalmartAirtableURL = "https://api.airtable.com/v0/appYoSKUjYL3bgvb3/Walmart?maxRecords=100&view=Grid%20view";
+    String WalmartAirtableURL = "https://api.airtable.com/v0/appYoSKUjYL3bgvb3/Walmart?maxRecords=100&view=READY%20FOR%20ENTRY%20DALLAS";
 
     @Test
     void readJsonDataFromResponse(String response) {
