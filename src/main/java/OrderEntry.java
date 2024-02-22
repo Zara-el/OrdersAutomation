@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 public class OrderEntry {
 
     public static EdgeOptions options = new EdgeOptions();
-
     public static WebDriver driver = new EdgeDriver(options);
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(2));
@@ -157,6 +156,8 @@ public class OrderEntry {
             driver.manage().window().maximize();
             System.setProperty("webdriver.edge.driver", "C:\\Users\\Zara\\Documents\\Projects\\OrdersEntry\\src\\main\\resources\\msedgedriver.exe");
             options.addArguments("--remote-allow-origins=*", "ignore-certificate-errors");
+            options.addArguments("--no-sandbox");
+            options.addArguments("--disable-dev-shm-usage");
             options.setBinary("C:\\Users\\Zara\\Documents\\Projects\\OrdersEntry\\src\\main\\resources\\msedgedriver.exe");
 
         } catch (Exception e) {
