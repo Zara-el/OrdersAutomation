@@ -29,7 +29,7 @@ public class Main {
     }
 
     @Test
-    public void enterWalmartOrdersFromAirtable() throws IOException, InterruptedException {
+    public static void enterWalmartOrdersFromAirtable() throws IOException, InterruptedException {
         orderEntry.enterOrder("Walmart", "Airtable");
     }
 
