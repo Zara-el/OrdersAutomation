@@ -32,7 +32,11 @@ import java.util.stream.Collectors;
 public class OrderEntry {
 
     public static EdgeOptions options = new EdgeOptions();
-    public static WebDriver driver;
+
+    public static WebDriver driver = new EdgeDriver(options);
+
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(2));
+
     List<List<String>> Orders = new ArrayList<>();
     ArrayList<String> orderDetails = new ArrayList<>();
     List<List<String>> failedOrders = new ArrayList<>();
@@ -41,7 +45,6 @@ public class OrderEntry {
     List<List<String>> EnteredOrders = new ArrayList<>();
     List<String> enteredOrdersIDs = new ArrayList<>();
     List<List<String>> UIOrders = new ArrayList<>();
-    WebDriverWait wait;
 
     String AmazonCSVPath = "C:\\Users\\Zara\\Downloads\\MAIN TABLE-ETI DALLAS Orders.csv";
     String WalmartCSVPath = "C:\\Users\\Zara\\Downloads\\Walmart-Grid view.csv";
@@ -151,13 +154,11 @@ public class OrderEntry {
     void setup() {
         try {
             //setup
-            //Navigate to tireguru
+            driver.manage().window().maximize();
             System.setProperty("webdriver.edge.driver", "C:\\Users\\Zara\\Documents\\Projects\\OrdersEntry\\src\\main\\resources\\msedgedriver.exe");
             options.addArguments("--remote-allow-origins=*", "ignore-certificate-errors");
             options.setBinary("C:\\Users\\Zara\\Documents\\Projects\\OrdersEntry\\src\\main\\resources\\msedgedriver.exe");
-            driver = new EdgeDriver(options);
-            driver.manage().window().maximize();
-            wait = new WebDriverWait(driver, Duration.ofSeconds(2));
+
         } catch (Exception e) {
             System.out.println("the setup has been unsuccessful " + e.getMessage());
         }
@@ -165,6 +166,7 @@ public class OrderEntry {
 
     void login() {
         try {
+            //Navigate to tireguru
             driver.get("https://www.tireguru.net/login.php");
 
             //Login to tireguru
