@@ -36,6 +36,9 @@ public class OrderEntry {
         options.addArguments("--window-size=1920,1080");
         options.addArguments("--start-maximized");
         options.addArguments("--headless");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--ignore-ssl-errors=yes");
+        options.addArguments("--ignore-certificate-errors");
     }
     public static WebDriver driver = new EdgeDriver(options);
 
