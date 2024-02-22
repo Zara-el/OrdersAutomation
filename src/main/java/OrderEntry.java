@@ -41,7 +41,7 @@ public class OrderEntry {
     List<List<String>> EnteredOrders = new ArrayList<>();
     List<String> enteredOrdersIDs = new ArrayList<>();
     List<List<String>> UIOrders = new ArrayList<>();
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(2));
+    WebDriverWait wait;
 
     String AmazonCSVPath = "C:\\Users\\Zara\\Downloads\\MAIN TABLE-ETI DALLAS Orders.csv";
     String WalmartCSVPath = "C:\\Users\\Zara\\Downloads\\Walmart-Grid view.csv";
@@ -157,6 +157,7 @@ public class OrderEntry {
             options.setBinary("C:\\Users\\Zara\\Documents\\Projects\\OrdersEntry\\src\\main\\resources\\msedgedriver.exe");
             driver = new EdgeDriver(options);
             driver.manage().window().maximize();
+            wait = new WebDriverWait(driver, Duration.ofSeconds(2));
         } catch (Exception e) {
             System.out.println("the setup has been unsuccessful " + e.getMessage());
         }
