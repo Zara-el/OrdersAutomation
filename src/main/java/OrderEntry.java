@@ -40,6 +40,7 @@ public class OrderEntry {
         options.addArguments("--ignore-ssl-errors=yes");
         options.addArguments("--ignore-certificate-errors");
         options.addArguments("--remote-debugging-port=9222");
+        options.addArguments("--no-sandbox");
     }
     public static WebDriver driver = new EdgeDriver(options);
 
