@@ -2,6 +2,15 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import dev.fuxing.airtable.AirtableApi;
 import dev.fuxing.airtable.AirtableTable;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -12,23 +21,21 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.NumberFormat;
+import java.text.DecimalFormat;
 import java.time.Duration;
 import java.util.*;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class getOrders {
+public class OrderEntry {
 
     public static EdgeOptions options = new EdgeOptions();
     public static WebDriver driver = new EdgeDriver(options);
-    AirtableApi api = new AirtableApi("keyLlxDa3uLQ8B7uD");
-    AirtableTable table = api.base("appYoSKUjYL3bgvb3").table("tblQyACTbwUwc5JKh");
-    List<List<String>> Orders = new ArrayList<>(table.list().size());
+//    AirtableApi api = new AirtableApi("keyLlxDa3uLQ8B7uD");
+//    AirtableTable table = api.base("appYoSKUjYL3bgvb3").table("tblQyACTbwUwc5JKh");
+    List<List<String>> Orders = new ArrayList<>();
     ArrayList<String> orderDetails = new ArrayList<>();
     List<List<String>> failedOrders = new ArrayList<>();
 
@@ -38,11 +45,91 @@ public class getOrders {
     List<List<String>> UIOrders = new ArrayList<>();
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(2));
 
+    String AmazonCSVPath = "C:\\Users\\Zara\\Downloads\\MAIN TABLE-ETI DALLAS Orders.csv";
+    String WalmartCSVPath = "C:\\Users\\Zara\\Downloads\\Walmart-Grid view.csv";
+    String AmazonAirtableURL = "https://api.airtable.com/v0/appYoSKUjYL3bgvb3/MAIN%20TABLE?maxRecords=100&view=ETI%20DALLAS%20Orders";
+    String WalmartAirtableURL = "https://api.airtable.com/v0/appYoSKUjYL3bgvb3/Walmart?maxRecords=100&view=Grid%20view";
+
     @Test
-    void readData() throws IOException {
+    void readJsonDataFromResponse(String response) {
         try {
-            String path = "C:\\Users\\Zara\\Downloads\\MAIN TABLE-Grid view.csv";
-//            String path = "C:\\Users\\Zara\\Downloads\\Walmart-Grid view.csv";
+            // Parse the JSON string
+            JSONObject jsonObject = new JSONObject(response);
+
+            // Get the "records" array
+            JSONArray recordsArray = jsonObject.getJSONArray("records");
+
+            // Iterate through each record
+            for (int i = 0; i < recordsArray.length(); i++) {
+                JSONObject record = recordsArray.getJSONObject(i);
+
+                // Get the "fields" object within each record
+                JSONObject fields = record.getJSONObject("fields");
+
+                // Define decimal format for doubles
+                DecimalFormat f = new DecimalFormat("##.00");
+
+                // Extract relevant information
+                String orderId = fields.getString("Order_ID");
+                String tgCost = String.valueOf(roundToDecimal(fields.getDouble("TG COST"), 1));
+                String shippingCost = String.valueOf(roundToDecimal(fields.getDouble("SHIPPING COST"), 1));
+                String quantity = String.valueOf(fields.getInt("QUANTITY"));
+                String status = fields.getString("Status");
+                String SKU = fields.getString("SKU");
+                String itemName = fields.getString("ITEM");
+
+                // Create a list to store order details
+                List<String> orderDetails = new ArrayList<>();
+                orderDetails.add(orderId);
+                orderDetails.add(tgCost);
+                orderDetails.add(shippingCost);
+                orderDetails.add(status);
+                orderDetails.add(quantity);
+                orderDetails.add(SKU);
+                orderDetails.add(itemName);
+
+                // Add the order details to the orders list
+                Orders.add(orderDetails);
+            }
+
+        } catch (Exception e) {
+            System.out.println("Unable to read JSON data from the response given " + e.getMessage());
+        }
+    }
+
+    private static double roundToDecimal(double value, int decimalPlaces) {
+        // Rounds the given value to the specified number of decimal places
+        // If the last decimal is 5 or more, round up; otherwise, round down
+        double factor = Math.pow(10, decimalPlaces);
+        return Math.round(value * factor) / factor;
+    }
+    @Test
+    void readOrdersFromAirtable(String httpURL) {
+        try {
+            HttpGet get = new HttpGet(httpURL);
+            get.setHeader("Content-Type", "application/json");
+            get.setHeader("Authorization", "Bearer " + "pateAL9Zx3OSPNI1O.ed26c6230bf67bf3e79ebc698784b8134c0d3896bae237cde3984f670881ef28");
+
+
+            JSONObject json = new JSONObject();
+            StringEntity params = new StringEntity(json.toString());
+
+
+            CloseableHttpClient httpclient = HttpClients.createDefault();
+            HttpResponse httpresponse = httpclient.execute(get);
+            String response = EntityUtils.toString(httpresponse.getEntity());
+
+            readJsonDataFromResponse(response);
+            System.out.println(Orders.toString());
+
+        } catch (Exception e) {
+            System.out.println("Unable to airtable data " + e.getMessage());
+        }
+    }
+
+    @Test
+    void readOrdersFromDownloadsDirectory(String path) throws IOException {
+        try {
             Reader reader = new FileReader(path);
 
 
@@ -57,9 +144,9 @@ public class getOrders {
                         .collect(Collectors.toList());
             }
 
-            System.out.println("Total Orders to be entered: " + Orders.size());
+            System.out.println("Total Amazon Orders to be entered: " + Orders.size());
         } catch (Exception e) {
-            System.out.println("Unable to read data from the csv file " + e.getMessage());
+            System.out.println("Unable to read Amazon data from the csv file " + e.getMessage());
         }
     }
 
@@ -201,15 +288,33 @@ public class getOrders {
 //            // Close connection
 //            bw.close();
 //        } catch (Exception e) {
+
 //            System.out.println("Unable to write to file the orders that failed " + e.getMessage());
 //        }
 //    }
 
     @Test
-    void enterOrder() throws IOException, InterruptedException {
+    void enterOrder(String platform, String source) throws IOException, InterruptedException {
 
         setup();
-        readData();
+        if(source.equalsIgnoreCase("Airtable")) {
+            if(platform.equalsIgnoreCase("Amazon"))
+                readOrdersFromAirtable(AmazonAirtableURL);
+            else if(platform.equalsIgnoreCase("Walmart"))
+                readOrdersFromAirtable(WalmartAirtableURL);
+            else
+                Assert.fail("The platform provided is not recognized, please choose either Amazon or Walmart.");
+        } else if(source.equalsIgnoreCase("CSV")) {
+            if(platform.equalsIgnoreCase("Amazon"))
+                readOrdersFromDownloadsDirectory(AmazonCSVPath);
+            else if(platform.equalsIgnoreCase("Walmart"))
+                readOrdersFromDownloadsDirectory(WalmartCSVPath);
+            else
+                Assert.fail("The platform provided is not recognized, please choose either Amazon or Walmart.");
+        } else {
+            Assert.fail("The source provided is not recognized, please choose either Airtable or CSV.");
+        }
+
 
         for (int i = 0; i < Orders.size(); i++) {
 
@@ -218,9 +323,9 @@ public class getOrders {
                 navigateToPointOfSale();
                 orderLookup();
 
-                //quick look screen
-                //enter SKU and search
-                //enter quantity and add to order
+//                quick look screen
+//                enter SKU and search
+//                enter quantity and add to order
                 driver.findElement(By.xpath("//input[@name='look_item_num']")).sendKeys(Orders.get(i).get(5));
                 driver.findElement(By.xpath("//button[@accesskey='s']")).click();
                 wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("(//input[@type='text'])[2]")));
@@ -236,9 +341,8 @@ public class getOrders {
                 driver.findElement(By.xpath("(//input[@type='text'])[2]")).sendKeys(quantity);
                 driver.findElement(By.xpath("(//button[@accesskey='t'])[5]")).click();
 
-                customerSearch("amazon");
-//                customerSearch("walmart");
-                updateStatus("Fedex/Ups");
+                customerSearch(platform.toLowerCase());
+                updateStatus("Fedex");
 
                 //add order_id as po number in po,ref,track
                 driver.switchTo().defaultContent();
@@ -273,6 +377,18 @@ public class getOrders {
                 driver.findElement(By.xpath("//textarea[@name = 'comment']")).sendKeys("GOS");
                 driver.findElement(By.xpath("//button[@accesskey = 'u']")).click();
 
+//                //find the order
+//                WebElement poNoElement = driver.findElement(By.partialLinkText(Orders.get(i).get(0)));
+//                WebElement tdElement = (WebElement) ((JavascriptExecutor) driver)
+//                        .executeScript("return arguments[0].parentNode;", poNoElement);
+//                WebElement trElement = (WebElement) ((JavascriptExecutor) driver)
+//                        .executeScript("return arguments[0].parentNode;", tdElement);
+//                Actions act = new Actions(driver);
+//                act.doubleClick(trElement).perform();
+//                Thread.sleep(1000);
+//                //double click
+
+
                 //options to add shipping fee
                 driver.switchTo().defaultContent();
                 Thread.sleep(3000);
@@ -283,9 +399,9 @@ public class getOrders {
                 wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//button[@accesskey = 'Y']/../button[2]")));
                 driver.findElement(By.xpath("//button[@accesskey = 'Y']/../button[2]")).click();
                 driver.findElement(By.xpath("//*[@id=\"row_353\"]/td[2]")).click();
-                NumberFormat format = NumberFormat.getCurrencyInstance();
-                Number shippingFee = format.parse(Orders.get(i).get(2));
-                driver.findElement(By.xpath("//input[@name = 'fee_amount']")).sendKeys(shippingFee.toString());
+//                NumberFormat format = NumberFormat.getCurrencyInstance();
+                String shippingFee = String.valueOf(Double.parseDouble(Orders.get(i).get(2)));
+                driver.findElement(By.xpath("//input[@name = 'fee_amount']")).sendKeys(shippingFee);
                 driver.findElement(By.xpath("//textarea[@name = 'fee_reason']")).sendKeys("Shipping");
                 Thread.sleep(3000);
                 driver.findElement(By.xpath("//button[@accesskey = 'e']")).click();
@@ -330,7 +446,7 @@ public class getOrders {
 
     void countValidate() {
         try {
-            System.out.println("Total orders to be ordered counted from the csv file given: " + Orders.size());
+            System.out.println("Total orders to be ordered counted from airtable data given: " + Orders.size());
             System.out.println("Total orders entered: " + EnteredOrders.size());
             System.out.println("Total orders that failed: " + failedOrders.size());
             Assert.assertEquals(Orders.size(), (EnteredOrders.size() +  failedOrders.size()), "Entered Orders count + failed Orders count does not match with the count of total orders from the CSV file.");
