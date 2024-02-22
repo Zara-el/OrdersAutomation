@@ -32,9 +32,7 @@ import java.util.stream.Collectors;
 public class OrderEntry {
 
     public static EdgeOptions options = new EdgeOptions();
-    public static WebDriver driver = new EdgeDriver(options);
-//    AirtableApi api = new AirtableApi("keyLlxDa3uLQ8B7uD");
-//    AirtableTable table = api.base("appYoSKUjYL3bgvb3").table("tblQyACTbwUwc5JKh");
+    public static WebDriver driver;
     List<List<String>> Orders = new ArrayList<>();
     ArrayList<String> orderDetails = new ArrayList<>();
     List<List<String>> failedOrders = new ArrayList<>();
@@ -156,6 +154,8 @@ public class OrderEntry {
             //Navigate to tireguru
             System.setProperty("webdriver.edge.driver", "C:\\Users\\Zara\\Documents\\Projects\\OrdersEntry\\src\\main\\resources\\msedgedriver.exe");
             options.addArguments("--remote-allow-origins=*", "ignore-certificate-errors");
+            options.setBinary("C:\\Users\\Zara\\Documents\\Projects\\OrdersEntry\\src\\main\\resources\\msedgedriver.exe");
+            driver = new EdgeDriver(options);
             driver.manage().window().maximize();
         } catch (Exception e) {
             System.out.println("the setup has been unsuccessful " + e.getMessage());
