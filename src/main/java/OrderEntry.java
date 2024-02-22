@@ -32,6 +32,11 @@ import java.util.stream.Collectors;
 public class OrderEntry {
 
     public static EdgeOptions options = new EdgeOptions();
+    static {
+        options.addArguments("--window-size=1920,1080");
+        options.addArguments("--start-maximized");
+        options.addArguments("--headless");
+    }
     public static WebDriver driver = new EdgeDriver(options);
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(2));
