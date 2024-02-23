@@ -36,11 +36,11 @@ public class OrderEntry {
         options.addArguments("--window-size=1920,1080");
         options.addArguments("--start-maximized");
         options.addArguments("--headless");
-        options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("--ignore-ssl-errors=yes");
-        options.addArguments("--ignore-certificate-errors");
-        options.addArguments("--remote-debugging-port=9222");
-        options.addArguments("--no-sandbox");
+//        options.addArguments("--disable-dev-shm-usage");
+//        options.addArguments("--ignore-ssl-errors=yes");
+//        options.addArguments("--ignore-certificate-errors");
+//        options.addArguments("--remote-debugging-port=9222");
+//        options.addArguments("--no-sandbox");
     }
     public static WebDriver driver = new EdgeDriver(options);
 
