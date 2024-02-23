@@ -457,6 +457,8 @@ public class OrderEntry {
         validateEnteredOrders();
         validateFailedOrders();
         countValidate();
+        EnteredOrders.clear();
+        failedOrders.clear();
 
     }
 
