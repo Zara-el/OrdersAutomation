@@ -63,6 +63,7 @@ public class OrderEntry {
     @Test
     void readJsonDataFromResponse(String response) {
         try {
+            Orders.clear();
             // Parse the JSON string
             JSONObject jsonObject = new JSONObject(response);
 
@@ -452,19 +453,19 @@ public class OrderEntry {
             }
         }
 
-        countValidate();
         getUIAmazonOrders();
         validateEnteredOrders();
         validateFailedOrders();
+        countValidate();
 
     }
 
     void countValidate() {
         try {
-            System.out.println("Total orders to be ordered counted from airtable data given: " + Orders.size());
+            System.out.println("Total orders to be entered counted from airtable data given: " + Orders.size());
             System.out.println("Total orders entered: " + EnteredOrders.size());
             System.out.println("Total orders that failed: " + failedOrders.size());
-            Assert.assertEquals(Orders.size(), (EnteredOrders.size() +  failedOrders.size()), "Entered Orders count + failed Orders count does not match with the count of total orders from the CSV file.");
+            Assert.assertEquals(Orders.size(), (EnteredOrders.size() +  failedOrders.size()), "Entered Orders count + failed Orders count does not match with the count of total orders from Airtable.");
         } catch (Exception e) {
             System.out.println("Count Validation failed");
         }
