@@ -4,7 +4,6 @@ import dev.fuxing.airtable.AirtableApi;
 import dev.fuxing.airtable.AirtableTable;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
@@ -22,6 +21,9 @@ import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
 import java.io.*;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
@@ -54,6 +56,7 @@ public class OrderEntry {
     List<List<String>> EnteredOrders = new ArrayList<>();
     List<String> enteredOrdersIDs = new ArrayList<>();
     List<List<String>> UIOrders = new ArrayList<>();
+    List<List<String>> SingleOrderDetails = new ArrayList<>();
 
     String AmazonCSVPath = "C:\\Users\\Zara\\Downloads\\MAIN TABLE-ETI DALLAS Orders.csv";
     String WalmartCSVPath = "C:\\Users\\Zara\\Downloads\\Walmart-Grid view.csv";
@@ -81,6 +84,7 @@ public class OrderEntry {
                 DecimalFormat f = new DecimalFormat("##.00");
 
                 // Extract relevant information
+                String recordID = record.getString("id");
                 String orderId = fields.getString("Order_ID");
                 String tgCost = String.valueOf(roundToDecimal(fields.getDouble("TG COST"), 1));
                 String shippingCost = String.valueOf(roundToDecimal(fields.getDouble("SHIPPING COST"), 1));
@@ -98,6 +102,7 @@ public class OrderEntry {
                 orderDetails.add(quantity);
                 orderDetails.add(SKU);
                 orderDetails.add(itemName);
+                orderDetails.add(recordID);
 
                 // Add the order details to the orders list
                 Orders.add(orderDetails);
@@ -120,11 +125,6 @@ public class OrderEntry {
             HttpGet get = new HttpGet(httpURL);
             get.setHeader("Content-Type", "application/json");
             get.setHeader("Authorization", "Bearer " + "pateAL9Zx3OSPNI1O.ed26c6230bf67bf3e79ebc698784b8134c0d3896bae237cde3984f670881ef28");
-
-
-            JSONObject json = new JSONObject();
-            StringEntity params = new StringEntity(json.toString());
-
 
             CloseableHttpClient httpclient = HttpClients.createDefault();
             HttpResponse httpresponse = httpclient.execute(get);
@@ -431,6 +431,7 @@ public class OrderEntry {
                 List<String> list = new ArrayList<String>();
                 list.add(Orders.get(i).get(0));
                 list.add(totalValue);
+                list.add(Orders.get(i).get(7));
                 EnteredOrders.add(new ArrayList<>(list));
                 list.clear();
                 enteredOrdersIDs.add(Orders.get(i).get(0));
@@ -453,6 +454,7 @@ public class OrderEntry {
             }
         }
 
+        updateStatusOnAirtableAfterEntry(platform);
         getUIAmazonOrders();
         validateEnteredOrders();
         validateFailedOrders();
@@ -527,6 +529,39 @@ public class OrderEntry {
 
     }
 
+    void updateStatusOnAirtableAfterEntry(String platform) {
+        try {
+            for (int i = 0; i < EnteredOrders.size(); i++) {
+
+                String statusPatch = "{\n" +
+                        "    \"fields\": {\n" +
+                        "      \"Status\": \"Done\"\n" +
+                        "    }\n" +
+                        "  }";
+
+                String url = null;
+                if (platform.equalsIgnoreCase("Amazon"))
+                    url = "https://api.airtable.com/v0/appYoSKUjYL3bgvb3/MAIN%20TABLE/" + EnteredOrders.get(i).get(2);
+                else if (platform.equalsIgnoreCase("Walmart"))
+                    url = "https://api.airtable.com/v0/appYoSKUjYL3bgvb3/Walmart/" + EnteredOrders.get(i).get(2);
+
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .header("Content-Type", "application/json")
+                        .header("Authorization", "Bearer " + "pateAL9Zx3OSPNI1O.ed26c6230bf67bf3e79ebc698784b8134c0d3896bae237cde3984f670881ef28")
+                        .method("PATCH", HttpRequest.BodyPublishers.ofString(statusPatch))
+                        .build();
+
+                java.net.http.HttpResponse<String> response = HttpClient.newHttpClient()
+                        .send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+
+                System.out.println(response.statusCode());
+                System.out.println(response.body());
+            }
+        } catch (Exception e) {
+            System.out.println("State update on airtable failed" + e.getMessage());
+        }
+    }
 
     @Test
     void getUIAmazonOrders() {
@@ -717,6 +752,163 @@ public class OrderEntry {
             System.out.println("Orders Entered Validation failed" + e.getMessage());
         }
     }
+
+    void enterSingleOrder(String platform, String source, String recordID) {
+        try {
+            setup();
+            if (source.equalsIgnoreCase("Airtable")) {
+                if (platform.equalsIgnoreCase("Amazon"))
+                    readOrdersFromAirtable(AmazonAirtableURL);
+                else if (platform.equalsIgnoreCase("Walmart"))
+                    readOrdersFromAirtable(WalmartAirtableURL);
+                else
+                    Assert.fail("The platform provided is not recognized, please choose either Amazon or Walmart.");
+            } else if (source.equalsIgnoreCase("CSV")) {
+                if (platform.equalsIgnoreCase("Amazon"))
+                    readOrdersFromDownloadsDirectory(AmazonCSVPath);
+                else if (platform.equalsIgnoreCase("Walmart"))
+                    readOrdersFromDownloadsDirectory(WalmartCSVPath);
+                else
+                    Assert.fail("The platform provided is not recognized, please choose either Amazon or Walmart.");
+            } else {
+                Assert.fail("The source provided is not recognized, please choose either Airtable or CSV.");
+            }
+
+            login();
+            navigateToPointOfSale();
+            orderLookup();
+
+            for (int i = 0; i < Orders.size(); i++) {
+                try {
+                    if (Orders.get(i).get(7).equalsIgnoreCase(recordID))
+                        SingleOrderDetails.add(Orders.get(i));
+                    //quick look screen
+                    //enter SKU and search
+                    //enter quantity and add to order
+                    driver.findElement(By.xpath("//input[@name='look_item_num']")).sendKeys(Orders.get(i).get(5));
+                    driver.findElement(By.xpath("//button[@accesskey='s']")).click();
+                    wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("(//input[@type='text'])[2]")));
+                    String mystring = SingleOrderDetails.get(0).get(4);
+                    String quantityList[] = mystring.split("\\.");
+                    String quantity;
+                    if (SingleOrderDetails.get(0).get(6).contains("Set of 2"))
+                        quantity = String.valueOf(Integer.parseInt(quantityList[0]) * 2);
+                    else if (SingleOrderDetails.get(0).get(6).contains("Set of 4"))
+                        quantity = String.valueOf(Integer.parseInt(quantityList[0]) * 4);
+                    else
+                        quantity = quantityList[0];
+                    driver.findElement(By.xpath("(//input[@type='text'])[2]")).sendKeys(quantity);
+                    driver.findElement(By.xpath("(//button[@accesskey='t'])[5]")).click();
+
+                    customerSearch(platform.toLowerCase());
+                    updateStatus("Fedex");
+
+                    //add order_id as po number in po,ref,track
+                    driver.switchTo().defaultContent();
+                    driver.switchTo().frame(driver.findElement(By.name("invoice_info")));
+                    wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("(//i[@style='color:orange']/..)[3]")));
+                    driver.findElement(By.xpath("(//i[@style='color:orange']/..)[3]")).click();
+                    driver.switchTo().defaultContent();
+                    driver.switchTo().frame(driver.findElement(By.name("mainDiv")));
+                    wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//input[@name='po']")));
+                    driver.findElement(By.xpath("//input[@name='po']")).sendKeys(SingleOrderDetails.get(0).get(0));
+                    driver.findElement(By.xpath("//button[@type='submit']")).click();
+
+                    //select item and override price
+                    driver.switchTo().defaultContent();
+                    driver.switchTo().frame(driver.findElement(By.name("invoice_items")));
+                    Thread.sleep(3000);
+                    driver.findElement(By.xpath("//table[@id = 'items_table']/tbody/tr[2]/td[1]")).click();
+                    driver.switchTo().defaultContent();
+                    driver.findElement(By.xpath("//button[@name = 'override']")).click();
+                    driver.switchTo().frame(driver.findElement(By.name("mainDiv")));
+                    Thread.sleep(3000);
+                    String TGCost;
+                    if (SingleOrderDetails.get(0).get(6).contains("Set of 2"))
+                        TGCost = String.valueOf(Double.parseDouble(SingleOrderDetails.get(0).get(1)) / 2.00);
+                    else if (SingleOrderDetails.get(0).get(6).contains("Set of 4"))
+                        TGCost = String.valueOf(Double.parseDouble(SingleOrderDetails.get(0).get(1)) / 4.00);
+                    else
+                        TGCost = Orders.get(0).get(1);
+                    Thread.sleep(1000);
+                    driver.findElement(By.xpath("//input[@id = 'parts']")).sendKeys("");
+                    driver.findElement(By.xpath("//input[@id = 'parts']")).sendKeys(TGCost);
+                    driver.findElement(By.xpath("//textarea[@name = 'comment']")).sendKeys("GOS");
+                    driver.findElement(By.xpath("//button[@accesskey = 'u']")).click();
+
+                    //                //find the order
+                    //                WebElement poNoElement = driver.findElement(By.partialLinkText(Orders.get(i).get(0)));
+                    //                WebElement tdElement = (WebElement) ((JavascriptExecutor) driver)
+                    //                        .executeScript("return arguments[0].parentNode;", poNoElement);
+                    //                WebElement trElement = (WebElement) ((JavascriptExecutor) driver)
+                    //                        .executeScript("return arguments[0].parentNode;", tdElement);
+                    //                Actions act = new Actions(driver);
+                    //                act.doubleClick(trElement).perform();
+                    //                Thread.sleep(1000);
+                    //                //double click
+
+
+                    //options to add shipping fee
+                    driver.switchTo().defaultContent();
+                    Thread.sleep(3000);
+                    wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//button[@accesskey = 'O']")));
+                    driver.findElement(By.xpath("//button[@accesskey = 'O']")).click();
+                    driver.switchTo().frame(driver.findElement(By.name("mainDiv")));
+                    Thread.sleep(3000);
+                    wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//button[@accesskey = 'Y']/../button[2]")));
+                    driver.findElement(By.xpath("//button[@accesskey = 'Y']/../button[2]")).click();
+                    driver.findElement(By.xpath("//*[@id=\"row_353\"]/td[2]")).click();
+                    //                NumberFormat format = NumberFormat.getCurrencyInstance();
+                    String shippingFee = String.valueOf(Double.parseDouble(SingleOrderDetails.get(0).get(2)));
+                    driver.findElement(By.xpath("//input[@name = 'fee_amount']")).sendKeys(shippingFee);
+                    driver.findElement(By.xpath("//textarea[@name = 'fee_reason']")).sendKeys("Shipping");
+                    Thread.sleep(3000);
+                    driver.findElement(By.xpath("//button[@accesskey = 'e']")).click();
+                    Thread.sleep(3000);
+
+                    //store work order no
+
+                    //store total value
+                    driver.switchTo().defaultContent();
+                    String totalValue = driver.findElement(By.xpath("//td[@id='grand_div']")).getText();
+                    List<String> list = new ArrayList<String>();
+                    list.add(SingleOrderDetails.get(0).get(0));
+                    list.add(totalValue);
+                    list.add(SingleOrderDetails.get(0).get(7));
+                    EnteredOrders.add(new ArrayList<>(list));
+                    list.clear();
+                    enteredOrdersIDs.add(Orders.get(0).get(0));
+
+                    //save & quit
+                    driver.switchTo().defaultContent();
+                    Thread.sleep(3000);
+                    driver.findElement(By.xpath("//button[@accesskey = 'Q']")).click();
+
+
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
+                    System.out.println("Failed to enter the following order: " + SingleOrderDetails.get(0).get(0));
+                    List<String> list2 = new ArrayList<String>();
+                    list2.add(SingleOrderDetails.get(0).get(0));
+                    list2.add(e.getMessage());
+                    failedOrders.add(new ArrayList<>(list2));
+                    list2.clear();
+                    failedOrdersIDs.add(SingleOrderDetails.get(0).get(0));
+                }
+            }
+
+            updateStatusOnAirtableAfterEntry(platform);
+            getUIAmazonOrders();
+            validateEnteredOrders();
+            validateFailedOrders();
+            countValidate();
+            EnteredOrders.clear();
+            failedOrders.clear();
+        } catch (Exception e) {
+            System.out.println("Unable to enter the order given" + e.getMessage());
+        }
+    }
 }
+
 
 
