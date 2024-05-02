@@ -16,7 +16,7 @@ public class Main {
     @Test
     public static void main(String[] args) {
         try {
-            enterWalmartOrdersFromAirtable();
+//            enterWalmartOrdersFromAirtable();
             enterAmazonOrdersFromAirtable();
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -43,4 +43,16 @@ public class Main {
     public void enterWalmartOrdersFromCSV() throws IOException, InterruptedException {
         orderEntry.enterOrder("Walmart", "CSV");
     }
+
+
+//    // Change this name to use a different table
+//    let table = base.getTable("MAIN TABLE");
+//
+//    // Prompt the user to pick a record
+//// If this script is run from a button field, this will use the button's record instead.
+//    let record = await input.recordAsync('Select a record to use', table);
+//console.log(record.id);
+//
+//const url = "http://127.0.0.1:8080/buildByToken/buildWithParameters?token=Airtable82ny&job=SingleOrderEntry&recordID=" + record.id
+//    await remoteFetchAsync(url);
 }

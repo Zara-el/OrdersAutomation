@@ -58,7 +58,7 @@ public class OrderEntry {
     List<List<String>> UIOrders = new ArrayList<>();
     List<List<String>> SingleOrderDetails = new ArrayList<>();
 
-    String AmazonCSVPath = "C:\\Users\\Zara\\Downloads\\MAIN TABLE-ETI DALLAS Orders.csv";
+    String AmazonCSVPath = "C:\\Users\\Zara\\Downloads\\MAIN TABLE-READY FOR ENTRY DALLAS.csv";
     String WalmartCSVPath = "C:\\Users\\Zara\\Downloads\\Walmart-Grid view.csv";
     String AmazonAirtableURL = "https://api.airtable.com/v0/appYoSKUjYL3bgvb3/MAIN%20TABLE?maxRecords=100&view=READY%20FOR%20ENTRY%20DALLAS";
     String WalmartAirtableURL = "https://api.airtable.com/v0/appYoSKUjYL3bgvb3/Walmart?maxRecords=100&view=READY%20FOR%20ENTRY%20DALLAS";
@@ -247,6 +247,16 @@ public class OrderEntry {
         try {
             //work order screen
             //change status to Fedex/Ups and click on change status
+            Thread.sleep(1000);
+            driver.switchTo().defaultContent();
+//            driver.switchTo().frame(driver.findElement(By.name("mainDiv_div")));
+            try {
+                wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//span[@id='mainDiv_divTitle']")));
+                driver.switchTo().frame(driver.findElement(By.name("mainDiv")));
+                driver.findElement(By.xpath("//button[@onclick='doClose()']")).click();
+            } catch (Exception e) {
+                System.out.println("Aging popup did not show up");
+            }
             driver.switchTo().defaultContent();
             driver.switchTo().frame(driver.findElement(By.name("invoice_info")));
             Thread.sleep(3000);
