@@ -16,8 +16,8 @@ public class Main {
     @Test
     public static void main(String[] args) {
         try {
-//            enterWalmartOrdersFromAirtable();
-            enterAmazonOrdersFromAirtable();
+            enterWalmartOrdersFromAirtable();
+//            enterAmazonOrdersFromAirtable();
         } catch (Exception e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
